@@ -1,0 +1,14 @@
+{
+  "name": "backend-project",
+  "version": "1.0.0",
+  "description": "A backend app for learning backend from chai aur code",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "backend"
+  ],
+  "author": "Manish Bhandari",
+  "license": "ISC"
+}
