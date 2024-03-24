@@ -74,6 +74,7 @@ userSchema.methods.generateAccesstokens = async function(){
         }
     )
 }
+
 userSchema.methods.generateRefreshtokens = async function(){
     return jwt.sign(
         {
