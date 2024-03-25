@@ -88,3 +88,5 @@ userSchema.methods.generateRefreshtokens = async function(){
 }
 
 const User = mongoose.model("User", userSchema);
+
+export {User};
