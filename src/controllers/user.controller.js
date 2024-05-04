@@ -239,13 +239,17 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   user.password = newPassword;
   await user.save({ validateBeforSave: false });
 
-  return res.status(202).json(202, {}, "password successfully changed");
+  return res
+    .status(202)
+    .json(new ApiResponse(202, {}, "password successfully changed"));
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(204)
-    .json(204, res.user, "current user is successfully fetched");
+    .json(
+      new ApiResponse(204, res.user, "current user is successfully fetched")
+    );
 });
 
 const updateUserdetails = asyncHandler(async (req, res) => {
@@ -264,7 +268,9 @@ const updateUserdetails = asyncHandler(async (req, res) => {
     },
     { new: true }
   ).select("-password");
-  return res.status(200, user, "User Details updated successfully");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User Details updated successfully"));
 });
 
 const userAvatarUpdate = asyncHandler(async (req, res) => {
@@ -281,7 +287,7 @@ const userAvatarUpdate = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findByIdAndUpdate(
-    req.user?.id,
+    req.user?._id,
     {
       $set: {
         avatar: avatar.url,
@@ -289,7 +295,9 @@ const userAvatarUpdate = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
-  return res.status(200, user, "User avatar updated successfully");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User avatar updated successfully"));
 });
 
 const userCoverImageUpdate = asyncHandler(async (req, res) => {
@@ -314,7 +322,78 @@ const userCoverImageUpdate = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
-  return res.status(200, user, "User coverImage updated successfully");
+  return res
+    .status(200)
+    .json(new ApiResponse(user, "User coverImage updated successfully"));
+});
+
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+  if (!username?.trim()) {
+    throw new ApiError(404, "Invalid Username");
+  }
+
+  const channel = await User.aggregate([
+    {
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        subscribersCount: {
+          $size: "$subscribers",
+        },
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $cond: {
+            if: {
+              $in: [req.user?._id, $subscribers.subscriber],
+            },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        email: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+      },
+    },
+  ]);
+  if (!channel?.length) {
+    throw new ApiError(404, "Channel not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel[0], "Channel successfully found"));
 });
 
 export {
@@ -327,4 +406,5 @@ export {
   updateUserdetails,
   userAvatarUpdate,
   userCoverImageUpdate,
+  getUserChannelProfile,
 };
